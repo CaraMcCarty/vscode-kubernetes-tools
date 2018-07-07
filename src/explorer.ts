@@ -6,6 +6,7 @@ import * as kubectlUtils from './kubectlUtils';
 import { Host } from './host';
 import * as kuberesources from './kuberesources';
 import { failed } from './errorable';
+import { getResourceSelectorString } from './kubectlUtils';
 
 export function create(kubectl: Kubectl, host: Host): KubernetesExplorer {
     return new KubernetesExplorer(kubectl, host);
@@ -333,14 +334,7 @@ class KubernetesSelectorResource extends KubernetesResource {
         if (!this.selector) {
             return [];
         }
-        let selectorString = "";
-        if (this.selector.matchLabels) {
-            const selectors = [];
-            for (const sel in this.selector.matchLabels) {
-                selectors.push(`${sel}=${this.selector.matchLabels[sel]}`);
-            }
-            selectorString = `-l ${selectors.join(",")}`;
-        }
+        const selectorString = kubectlUtils.getResourceSelectorString(this.selector);
         const pods = await kubectl.fromLines(`get po ${selectorString}`);
         if (failed(pods)) {
             host.showErrorMessage(pods.error[0]);
