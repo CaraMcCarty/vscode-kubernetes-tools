@@ -168,12 +168,7 @@ export async function getPodSelector(resource: string, kubectl: Kubectl): Promis
     });
 }
 
-export async function getPods(kubectl: Kubectl, selector: any, namespace: string = null): Promise<PodInfo[]> {
-    const ns = namespace || await currentNamespace(kubectl);
-    let nsFlag = `--namespace=${ns}`;
-    if (ns === 'all') {
-        nsFlag = '--all-namespaces';
-    }
+export function getResourceSelectorString(selector: any): string {
     const labels = [];
     let matchLabelObj = selector;
     if (selector && selector.matchLabels) {
@@ -188,7 +183,16 @@ export async function getPods(kubectl: Kubectl, selector: any, namespace: string
     if (labels.length > 0) {
         labelStr = "--selector=" + labels.join(",");
     }
+    return labelStr;
+}
 
+export async function getPods(kubectl: Kubectl, selector: any, namespace: string = null): Promise<PodInfo[]> {
+    const ns = namespace || await currentNamespace(kubectl);
+    let nsFlag = `--namespace=${ns}`;
+    if (ns === 'all') {
+        nsFlag = '--all-namespaces';
+    }
+    const labelStr = getResourceSelectorString(selector);
     const pods = await kubectl.asJson<KubernetesCollection<Pod>>(`get pods -o json ${nsFlag} ${labelStr}`);
     if (failed(pods)) {
         vscode.window.showErrorMessage(pods.error[0]);
